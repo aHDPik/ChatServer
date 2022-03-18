@@ -9,6 +9,7 @@ namespace Server
 {
     public class ChatContext:DbContext
     {
+
         public DbSet<UserData> UserData { get; set; }
         public DbSet<Message> Messages { get; set; }
 
