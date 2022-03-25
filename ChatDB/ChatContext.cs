@@ -47,6 +47,16 @@ namespace ChatDB
             return await messages.ToListAsync();
         }
 
+        public async Task<List<Message>> GetAllMyInvolvedMessages(string username, DateTime startTime)
+        {
+            IQueryable<Message> messages = (from msg in Messages
+                                            where msg.Timestamp > startTime &&
+                                            (msg.Receiver.Name == username ||
+                                            msg.Sender.Name == username)
+                                            select msg).Include(m => m.Sender);
+            return await messages.ToListAsync();
+        }
+
         public async Task<bool> RegisterUser(string username)
         {
             if (UserData.Any(usr => usr.Name == username))

@@ -1,4 +1,5 @@
 ﻿using ChatDB;
+using SocketExtensions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,16 +15,14 @@ namespace TcpServer
         static TcpListener listener;
         static ChatContext chatContext = new ChatContext();
 
-        static void WorkWithClient(TcpClient client)
+        static async Task WorkWithClient(TcpClient client)
         {
             using(NetworkStream stream = client.GetStream())
-            using (StreamReader sr = new StreamReader(stream))
-            using (StreamWriter sw = new StreamWriter(stream))
             {
                 string command=null;
                 do
                 {
-                    command = sr.ReadLine();
+                    command = await stream.ReadLineAsync();
                     string[] parts = command.Split(';');
                     bool result = false;
                     string reply = "";
@@ -32,52 +31,50 @@ namespace TcpServer
                     switch (parts[0])
                     {
                         case "Register":
-                            result = chatContext.RegisterUser(parts[1]).Result;
+                            result = await chatContext.RegisterUser(parts[1]);
                             if (!result)
                                 reply = "Name already exists";
                             else
                                 reply = "Complete";
                             break;
                         case "Send":
-                            result = chatContext.SendMessage(parts[1], parts[2], parts[3]).Result;
+                            result = await chatContext.SendMessage(parts[1], parts[2], parts[3]);
                             if (!result)
                                 reply = "Could not send message";
                             else
                                 reply = "Message sent";
                             break;
                         case "Receive":
-                            messages = chatContext.GetAllMyMessages
-                                (parts[1], DateTime.Parse(parts[2])).Result;
+                            messages = await chatContext.GetAllMyInvolvedMessages
+                                (parts[1], DateTime.Parse(parts[2]));
                             foreach (Message message in messages)
                             {
-                                sb.Append($"{message.Sender.Name}:{message.Text}\n");
+                                sb.Append($"{message.Sender.Name}:{message.Text}\r\n");
                             }
                             reply = sb.ToString();
                             break;
 
                     }
-                    sw.WriteLine(reply);
-                    stream.Flush();
+                    await stream.WriteLineAsync(reply);
+                    await stream.FlushAsync();
                 } while (command != "Exit");
             }
         }
 
         static async Task Listen()
         {
-            Queue<Thread> connections = new Queue<Thread>();
+            Queue<Task> connections = new Queue<Task>();
             while (true)
             {
                 TcpClient connection = await listener.AcceptTcpClientAsync();
-                Thread t = new Thread(()=>WorkWithClient(connection));
-                t.IsBackground = true;
-                t.Start();
-                connections.Enqueue(t);
+                connections.Enqueue(WorkWithClient(connection));
             }
         }
 
 
         static async Task Main(string[] args)
         {
+            await chatContext.Database.EnsureCreatedAsync();
             listener = new TcpListener(System.Net.IPAddress.Any,56234);
             listener.Start();
             await Listen();

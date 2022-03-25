@@ -36,6 +36,7 @@
             this.chat = new System.Windows.Forms.RichTextBox();
             this.registerButton = new System.Windows.Forms.Button();
             this.timer = new System.Windows.Forms.Timer(this.components);
+            this.connectButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // username
@@ -61,6 +62,7 @@
             // 
             // sendButton
             // 
+            this.sendButton.Enabled = false;
             this.sendButton.Location = new System.Drawing.Point(713, 406);
             this.sendButton.Name = "sendButton";
             this.sendButton.Size = new System.Drawing.Size(75, 23);
@@ -79,6 +81,7 @@
             // 
             // registerButton
             // 
+            this.registerButton.Enabled = false;
             this.registerButton.Location = new System.Drawing.Point(12, 444);
             this.registerButton.Name = "registerButton";
             this.registerButton.Size = new System.Drawing.Size(100, 23);
@@ -89,13 +92,25 @@
             // 
             // timer
             // 
+            this.timer.Interval = 1000;
             this.timer.Tick += new System.EventHandler(this.timer_Tick);
+            // 
+            // connectButton
+            // 
+            this.connectButton.Location = new System.Drawing.Point(134, 444);
+            this.connectButton.Name = "connectButton";
+            this.connectButton.Size = new System.Drawing.Size(100, 23);
+            this.connectButton.TabIndex = 6;
+            this.connectButton.Text = "Подключиться";
+            this.connectButton.UseVisualStyleBackColor = true;
+            this.connectButton.Click += new System.EventHandler(this.connectButton_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(801, 470);
+            this.Controls.Add(this.connectButton);
             this.Controls.Add(this.registerButton);
             this.Controls.Add(this.chat);
             this.Controls.Add(this.sendButton);
@@ -118,5 +133,6 @@
         private System.Windows.Forms.RichTextBox chat;
         private System.Windows.Forms.Button registerButton;
         private System.Windows.Forms.Timer timer;
+        private System.Windows.Forms.Button connectButton;
     }
 }

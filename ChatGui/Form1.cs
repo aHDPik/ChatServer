@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SocketExtensions;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,31 +18,26 @@ namespace ChatGui
         public Form1()
         {
             InitializeComponent();
-            client = new TcpClient("localhost", 56234);
-            stream = client.GetStream();
-            sr = new StreamReader(stream);
-            sw = new StreamWriter(stream);
+
             from = DateTime.Now.AddDays(-2);
         }
 
         TcpClient client = null;
         NetworkStream stream = null;
-        StreamReader sr = null;
-        StreamWriter sw = null;
-
+        //Убираем ссылки на Reader
         private async void sendButton_Click(object sender, EventArgs e)
         {
             string request = $"Send;{username.Text};{receivername.Text};{message.Text}";
-            await sw.WriteLineAsync(request);
-            await sw.FlushAsync();
-            string reply = await sr.ReadLineAsync();
+            await stream.WriteLineAsync(request);
+            await stream.FlushAsync();
+            string reply = await stream.ReadLineAsync();
             if (reply != "Message sent")
             {
-                MessageBox.Show("Не удалось отправить сообщение");
+                MessageBox.Show("Не удалось отправить сообщение", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             else
             {
-                chat.Text += $"{receivername.Text}:{message.Text}";
+                //chat.Text += $"{receivername.Text}:{message.Text}\r\n";
                 if (!timer.Enabled)
                     timer.Start();
             }
@@ -50,25 +46,47 @@ namespace ChatGui
         private async void registerButton_Click(object sender, EventArgs e)
         {
             string request = $"Register;{username.Text}";
-            await sw.WriteLineAsync(request);
+            await stream.WriteLineAsync(request);
             await stream.FlushAsync();
-            string reply = await sr.ReadLineAsync();
+            string reply = await stream.ReadLineAsync();
             if (reply == "Complete")
-                MessageBox.Show("Регистрация прошла успешно!");
+                MessageBox.Show("Регистрация прошла успешно!", "Успех", MessageBoxButtons.OK, MessageBoxIcon.Information);
             else
-                MessageBox.Show("Пользователь уже существует", "Ошибка");
+                MessageBox.Show("Пользователь уже существует", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         DateTime from;
-
+        bool timerReady = true;
         private async void timer_Tick(object sender, EventArgs e)
         {
-            string request = $"Receive;{username.Text};{from}";
-            from = DateTime.Now;
-            await sw.WriteLineAsync(request);
-            await stream.FlushAsync();
-            string reply = await sr.ReadLineAsync();
-            chat.Text += reply;
+            if (timerReady)
+            {
+                timerReady = false;
+                string request = $"Receive;{username.Text};{from}";
+                from = DateTime.Now;
+                await stream.WriteLineAsync(request);
+                await stream.FlushAsync();
+                string reply = await stream.ReadLineAsync();
+                if (reply != null)
+                    chat.Text += reply;
+                timerReady = true;
+            }
+        }
+        //Выносим соединение с сервером на отдельную кнопку, чтобы программа не подключалась автоматически
+        private void connectButton_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                client = new TcpClient("localhost", 56234);
+                stream = client.GetStream();
+                connectButton.Enabled = false;
+                sendButton.Enabled = true;
+                registerButton.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Сервер не доступен","Ошибка",MessageBoxButtons.OK,MessageBoxIcon.Error);
+            }
         }
     }
 }
